@@ -1,0 +1,59 @@
+#include "imports/stdlib.fc";
+#include "imports/new_ops.fc";
+#include "frost_verify.fc";
+
+;; Simple wallet smart contract - Multisig with FROST protocol
+
+() recv_internal(slice in_msg) impure {
+  ;; do nothing for internal messages
+}
+
+const op::send = "op::send"c;
+const op::change_key = "op::change_key"c;
+
+() recv_external(slice in_msg) impure {
+  int R = in_msg~load_uint(256);
+  int Z = in_msg~load_uint(256);
+  var cs = in_msg;
+  var (subwallet_id, valid_until, msg_seqno) = (cs~load_uint(32), cs~load_uint(32), cs~load_uint(32));
+  throw_if(35, valid_until <= now());
+  var ds = get_data().begin_parse();
+  var (stored_seqno, stored_subwallet, A) = (ds~load_uint(32), ds~load_uint(32), ds~load_uint(256));
+  ds.end_parse();
+  throw_unless(33, msg_seqno == stored_seqno);
+  throw_unless(34, subwallet_id == stored_subwallet);
+  tuple H = SHA512(in_msg, 1);
+  int H1 = H.at(0);
+  int H2 = H.at(1);
+  throw_unless(35, verify(A, R, Z, H1, H2));
+  accept_message();
+  cs~touch();
+  int op = cs~load_uint(32);
+  if (op == op::send) {
+    while (cs.slice_refs()) {
+        var mode = cs~load_uint(8);
+        send_raw_message(cs~load_ref(), mode);
+    }
+  } else {
+    if (op == op::change_key) {
+        int A = cs~load_uint(256);
+    }
+  }
+  set_data(begin_cell()
+    .store_uint(stored_seqno + 1, 32)
+    .store_uint(stored_subwallet, 32)
+    .store_uint(A, 256)
+    .end_cell());
+}
+
+;; Get methods
+
+int seqno() method_id {
+  return get_data().begin_parse().preload_uint(32);
+}
+
+int get_public_key() method_id {
+  var cs = get_data().begin_parse();
+  cs~load_uint(64);
+  return cs.preload_uint(256);
+}

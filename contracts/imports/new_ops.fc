@@ -1,0 +1,11 @@
+int SHA256(slice s, slice s2, int n) asm "HASHEXT_SHA256";
+tuple SHA512(slice s, int n) asm "HASHEXT_SHA512";
+
+int RIST255_FROMHASH(int h1, int h2) asm "RIST255_FROMHASH";
+int RIST255_SUB(int x, int y) asm "RIST255_SUB";
+int RIST255_MUL(int x, int n) asm "RIST255_MUL";
+int RIST255_MULBASE(int n) asm "RIST255_MULBASE";
+int RIST255_ADD(int x, int y) asm "RIST255_ADD";
+int RIST255_L() asm "RIST255_PUSHL";
+
+int gas_usage() asm "GASCONSUMED";

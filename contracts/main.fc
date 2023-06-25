@@ -1,0 +1,38 @@
+#include "imports/stdlib.fc";
+#include "imports/new_ops.fc";
+
+int verify(int A, int R, int Z, int H1, int H2) impure {
+    slice s1 = begin_cell()
+    .store_slice("FROST-SHA256")
+    .store_uint(R, 256)
+    .store_uint(A, 256)
+    .end_cell().begin_parse();
+    slice s2 = begin_cell()
+        .store_uint(H1, 256)
+        .store_uint(H2, 256)
+        .end_cell().begin_parse();
+
+    int e = SHA256(s1, s2, 2);
+    int l = RIST255_L();
+    e %= l;
+
+    int nA = RIST255_SUB(0, A);
+    int t1 = RIST255_MUL(nA, e);
+    int t2 = RIST255_MULBASE(Z);
+    int rp = RIST255_ADD(t1, t2);
+
+    return rp == R;
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    int A = 86383185956876342288184237102697121800469749000616441632608088176551477567013;
+    int R = 64533381545666339689943909177039405919285834534402509514742615956689728874771;
+    int Z = 1481915848877677628348029815034842963914347479977994940508818521078625872070;
+    int H1 = 16186333648077594038222451706363310965252090879791912244248700227561420666331;
+    int H2 = 23967420293027551353793346642752053922297400826613342001965337619649164022095;
+
+    verify(A,R,Z,H1,H2);
+
+    int g = gas_usage();
+    g~dump();
+}
